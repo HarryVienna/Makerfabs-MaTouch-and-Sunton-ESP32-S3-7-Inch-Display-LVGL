@@ -1,4 +1,5 @@
 .pio
 .vscode
+dependencies.lock
 build
 sdkconfig.matouch_s3
