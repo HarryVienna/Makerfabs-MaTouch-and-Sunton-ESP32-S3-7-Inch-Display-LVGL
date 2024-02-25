@@ -15,6 +15,7 @@ void app_main(void)
 {
 
     init_display();
+    set_backlight_brightness(2);
 
     ESP_LOGI(TAG, "Start LVGL ui");
 
@@ -22,16 +23,5 @@ void app_main(void)
     ui_init();
     xSemaphoreGiveRecursive(lvgl_mux);
 
-    while(1) {
-        for (int i = 0; i <= 255; ++i) {
-            set_backlight_brightness(i);
-            vTaskDelay(pdMS_TO_TICKS(100));
-        }
-
-        for (int i = 255; i >= 0; --i) {
-            set_backlight_brightness(i);
-            vTaskDelay(pdMS_TO_TICKS(100));
-        }
-    }
 
 }

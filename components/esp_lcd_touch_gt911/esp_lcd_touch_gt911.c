@@ -26,8 +26,6 @@ static const char *TAG = "GT911";
 #define ESP_LCD_TOUCH_GT911_MAX_X           (0x8048)
 #define ESP_LCD_TOUCH_GT911_MAX_Y           (0x804A)
 #define ESP_LCD_TOUCH_GT911_PRODUCT_ID_REG  (0x8140)
-#define ESP_LCD_TOUCH_GT911_X_RES           (0x8146)
-#define ESP_LCD_TOUCH_GT911_Y_RES           (0x8148)
 #define ESP_LCD_TOUCH_GT911_ENTER_SLEEP     (0x8040)
 #define ESP_LCD_TOUCH_GT911_CHKSUM          (0x80FF)
 #define ESP_LCD_TOUCH_GT911_FRESH           (0x8100)

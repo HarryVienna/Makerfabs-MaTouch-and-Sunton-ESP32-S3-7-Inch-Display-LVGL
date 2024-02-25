@@ -227,13 +227,9 @@ void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch
     ESP_LOGI(TAG, "Initialize LVGL library");
     lv_init();
 
-    ESP_LOGI(TAG, "Use frame buffers as LVGL draw buffers");
-    void *buf1 = NULL;
-    void *buf2 = NULL;
-
     ESP_LOGI(TAG, "Allocate separate LVGL draw buffers from PSRAM");
-    buf1 = heap_caps_malloc(LCD_H_RES * 100 * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-    buf2 = heap_caps_malloc(LCD_H_RES * 100 * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
+    void *buf1 = heap_caps_malloc(LCD_H_RES * 100 * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
+    void *buf2 = heap_caps_malloc(LCD_H_RES * 100 * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
     lv_disp_draw_buf_init(&disp_buf, buf1, buf2, LCD_H_RES * 100);
 
     ESP_LOGI(TAG, "Register display driver to LVGL");
