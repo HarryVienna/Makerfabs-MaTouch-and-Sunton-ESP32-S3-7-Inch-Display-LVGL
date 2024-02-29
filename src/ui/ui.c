@@ -13,7 +13,9 @@
 void ui_ScreenTest_screen_init(void);
 void ui_event_ScreenTest(lv_event_t * e);
 lv_obj_t * ui_ScreenTest;
+lv_obj_t * ui_Panel1;
 lv_obj_t * ui_LabelHelloWorld;
+lv_obj_t * ui_LabelCounter;
 lv_obj_t * ui_LabelBrightness;
 void ui_event_SliderBrightness(lv_event_t * e);
 lv_obj_t * ui_SliderBrightness;
@@ -35,7 +37,7 @@ void ui_event_ScreenTest(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
     if(event_code == LV_EVENT_SCREEN_LOADED) {
-        screen_event_init(e);
+        event_screen_init(e);
     }
 }
 void ui_event_SliderBrightness(lv_event_t * e)
@@ -43,7 +45,7 @@ void ui_event_SliderBrightness(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
     if(event_code == LV_EVENT_VALUE_CHANGED) {
-        slider_event_set_backlight_brightness(e);
+        event_slider_set_backlight_brightness(e);
     }
 }
 

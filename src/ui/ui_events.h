@@ -10,8 +10,8 @@
 extern "C" {
 #endif
 
-void screen_event_init(lv_event_t * e);
-void slider_event_set_backlight_brightness(lv_event_t * e);
+void event_screen_init(lv_event_t * e);
+void event_slider_set_backlight_brightness(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

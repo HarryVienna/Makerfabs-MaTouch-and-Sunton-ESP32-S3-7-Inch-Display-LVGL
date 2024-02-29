@@ -18,7 +18,9 @@ extern "C" {
 void ui_ScreenTest_screen_init(void);
 void ui_event_ScreenTest(lv_event_t * e);
 extern lv_obj_t * ui_ScreenTest;
+extern lv_obj_t * ui_Panel1;
 extern lv_obj_t * ui_LabelHelloWorld;
+extern lv_obj_t * ui_LabelCounter;
 extern lv_obj_t * ui_LabelBrightness;
 void ui_event_SliderBrightness(lv_event_t * e);
 extern lv_obj_t * ui_SliderBrightness;

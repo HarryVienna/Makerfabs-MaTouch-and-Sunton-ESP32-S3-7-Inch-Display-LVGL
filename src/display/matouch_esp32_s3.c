@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include "sdkconfig.h"
+#include "esp_log.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -7,72 +9,76 @@
 #include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
+
 #include "lvgl.h"
-
-
 #include "matouch_esp32_s3.h"
 
-#include "esp_log.h"
 
 // PWM Configuration
-#define PWM_FREQ 1000 
-#define PWM_RESOLUTION LEDC_TIMER_8_BIT 
-#define LEDC_CHANNEL LEDC_CHANNEL_0  
-#define LEDC_TIMER LEDC_TIMER_0 
-#define LEDC_PIN_NUM_BK_LIGHT    GPIO_NUM_10
+#define PWM_FREQ               200 
+#define PWM_RESOLUTION         LEDC_TIMER_8_BIT 
+#define LEDC_CHANNEL           LEDC_CHANNEL_0  
+#define LEDC_TIMER             LEDC_TIMER_0 
+#define LEDC_PIN_NUM_BK_LIGHT  GPIO_NUM_10
 
 // I2C
-#define I2C_SCL   (GPIO_NUM_18)
-#define I2C_SDA   (GPIO_NUM_17)
-#define I2C_RST   (GPIO_NUM_38)
+#define I2C_SCL          GPIO_NUM_18
+#define I2C_SDA          GPIO_NUM_17
+#define I2C_RST          GPIO_NUM_38
 #define I2C_CLK_SPEED_HZ 400000
-#define I2C_NUM I2C_NUM_0
+#define I2C_NUM          I2C_NUM_0
 
 // LCD
 #define LCD_PIXEL_CLOCK_HZ     (18 * 1000 * 1000)
 
 #define PIN_NUM_BK_LIGHT       GPIO_NUM_10
-#define PIN_NUM_HSYNC          39
-#define PIN_NUM_VSYNC          41
-#define PIN_NUM_DE             40
-#define PIN_NUM_PCLK           42
-#define PIN_NUM_DATA0          8 // B0
-#define PIN_NUM_DATA1          3 // B1
-#define PIN_NUM_DATA2          46 // B2
-#define PIN_NUM_DATA3          9 // B3
-#define PIN_NUM_DATA4          1 // B4
-#define PIN_NUM_DATA5          5 // G0
-#define PIN_NUM_DATA6          6 // G1
-#define PIN_NUM_DATA7          7 // G2
-#define PIN_NUM_DATA8          15 // G3
-#define PIN_NUM_DATA9          16 // G4
-#define PIN_NUM_DATA10         4 // G5
-#define PIN_NUM_DATA11         45  // R0
-#define PIN_NUM_DATA12         48  // R1
-#define PIN_NUM_DATA13         47 // R2
-#define PIN_NUM_DATA14         21 // R3
-#define PIN_NUM_DATA15         14 // R4
-#define PIN_NUM_DISP_EN        -1
+#define PIN_NUM_HSYNC          GPIO_NUM_39
+#define PIN_NUM_VSYNC          GPIO_NUM_41
+#define PIN_NUM_DE             GPIO_NUM_40
+#define PIN_NUM_PCLK           GPIO_NUM_42
+#define PIN_NUM_DATA0          GPIO_NUM_8   // B0
+#define PIN_NUM_DATA1          GPIO_NUM_3   // B1
+#define PIN_NUM_DATA2          GPIO_NUM_46  // B2
+#define PIN_NUM_DATA3          GPIO_NUM_9   // B3
+#define PIN_NUM_DATA4          GPIO_NUM_1   // B4
+#define PIN_NUM_DATA5          GPIO_NUM_5   // G0
+#define PIN_NUM_DATA6          GPIO_NUM_6   // G1
+#define PIN_NUM_DATA7          GPIO_NUM_7   // G2
+#define PIN_NUM_DATA8          GPIO_NUM_15  // G3
+#define PIN_NUM_DATA9          GPIO_NUM_16  // G4
+#define PIN_NUM_DATA10         GPIO_NUM_4   // G5
+#define PIN_NUM_DATA11         GPIO_NUM_45  // R0
+#define PIN_NUM_DATA12         GPIO_NUM_48  // R1
+#define PIN_NUM_DATA13         GPIO_NUM_47  // R2
+#define PIN_NUM_DATA14         GPIO_NUM_21  // R3
+#define PIN_NUM_DATA15         GPIO_NUM_14  // R4
+#define PIN_NUM_DISP_EN        GPIO_NUM_NC
 
 #define LCD_H_RES              1024
 #define LCD_V_RES              600
 
 // LVGL
-#define LVGL_TASK_DELAY_MS 10
+#define LVGL_TASK_DELAY_MS   10
 #define LVGL_TASK_STACK_SIZE (4 * 1024)
-#define LVGL_TASK_PRIORITY  2
+#define LVGL_TASK_PRIORITY   2
 
 
 static const char* TAG = "DISPLAY";
 
 static void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data);
 static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map);
+static bool on_vsync_event(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_data);
 static void lvgl_port_task(void *arg);
 
+SemaphoreHandle_t lvgl_mux;
+SemaphoreHandle_t sem_vsync_end;
+SemaphoreHandle_t sem_gui_ready;
 
-SemaphoreHandle_t lvgl_mux = NULL;
-
-
+/**
+ * @brief Initialize Display
+ *
+ * This function initializes the LCD display, including the backlight, touch panel, LCD panel, and LVGL library.
+ */
 void init_display(void)
 {
     
@@ -86,8 +92,11 @@ void init_display(void)
 
 }
 
-
-
+/**
+ * @brief Initialize LCD Backlight
+ *
+ * This function initializes the PWM timer and channel configurations for controlling the LCD backlight.
+ */
 void init_backlight(void) {
     ledc_timer_config_t ledc_timer = {
         .duty_resolution = PWM_RESOLUTION,
@@ -112,6 +121,13 @@ void init_backlight(void) {
     ledc_channel_config(&ledc_channel);
 }
 
+/**
+ * @brief Set LCD Backlight Brightness
+ *
+ * This function sets the brightness level of the LCD backlight.
+ *
+ * @param[in] brightness The brightness level to set (0-255).
+ */
 void set_backlight_brightness(uint8_t brightness) {
     ESP_LOGI(TAG, "Setting LCD backlight brightness to %d", brightness);
 
@@ -120,6 +136,14 @@ void set_backlight_brightness(uint8_t brightness) {
 }
 
 
+/**
+ * @brief Initialize Touch Driver
+ *
+ * This function installs the touch driver, configures the I2C interface for touch communication,
+ * initializes the touch controller, and creates a touch handle for touch input.
+ *
+ * @param[out] touch_handle Pointer to the handle for the initialized touch controller.
+ */
 void init_touch(esp_lcd_touch_handle_t *touch_handle) {
 
     ESP_LOGI(TAG, "Install Touch driver");
@@ -156,18 +180,26 @@ void init_touch(esp_lcd_touch_handle_t *touch_handle) {
     esp_lcd_panel_io_handle_t tp_io_handle = NULL;
 
     const esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_GT911_CONFIG();
-    //ESP_LOGI(TAG, "esp_lcd_new_panel_io_i2c");
     esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)I2C_NUM, &tp_io_config, &tp_io_handle);
-    //ESP_LOGI(TAG, "esp_lcd_touch_new_i2c_gt911");
     esp_lcd_touch_new_i2c_gt911(tp_io_handle, &tp_cfg, touch_handle);
-
 }
 
 
-
+/**
+ * @brief Initialize RGB LCD Panel
+ *
+ * This function installs the RGB LCD panel driver, creates semaphores for synchronization,
+ * configures the RGB LCD panel with the provided parameters, registers event callbacks,
+ * resets and initializes the RGB LCD panel.
+ *
+ * @param[out] panel_handle Pointer to the handle for the initialized RGB LCD panel.
+ */
 void init_lcd(esp_lcd_panel_handle_t *panel_handle) {
     
     ESP_LOGI(TAG, "Install RGB LCD panel driver");
+
+    sem_vsync_end = xSemaphoreCreateBinary();
+    sem_gui_ready = xSemaphoreCreateBinary();
 
     esp_lcd_rgb_panel_config_t panel_config = {
         .data_width = 16, // RGB565 in parallel mode, thus 16bit in width
@@ -201,24 +233,41 @@ void init_lcd(esp_lcd_panel_handle_t *panel_handle) {
             .pclk_hz = LCD_PIXEL_CLOCK_HZ,
             .h_res = LCD_H_RES,
             .v_res = LCD_V_RES,
-            // The following parameters should refer to LCD spec
-            .hsync_back_porch = 128,
-            .hsync_front_porch = 40,
-            .hsync_pulse_width = 48,
-            .vsync_back_porch = 45,
-            .vsync_front_porch = 13,
-            .vsync_pulse_width = 3,
+            // Matouch 7 inch values
+            .hsync_back_porch = 16,
+            .hsync_front_porch = 80,
+            .hsync_pulse_width = 4,
+            .vsync_back_porch = 4,
+            .vsync_front_porch = 22,
+            .vsync_pulse_width = 4,
             .flags.pclk_active_neg = true,
         },
         .flags.fb_in_psram = true, // allocate frame buffer in PSRAM
     };
     esp_lcd_new_rgb_panel(&panel_config, panel_handle);
 
+    ESP_LOGI(TAG, "Register event callbacks");
+    esp_lcd_rgb_panel_event_callbacks_t cbs = {
+        .on_vsync = on_vsync_event,
+    };
+    esp_lcd_rgb_panel_register_event_callbacks(*panel_handle, &cbs, NULL);
+
+
     ESP_LOGI(TAG, "Initialize RGB LCD panel");
     esp_lcd_panel_reset(*panel_handle);
     esp_lcd_panel_init(*panel_handle);
 }
 
+/**
+ * @brief Initialize LVGL Library
+ *
+ * This function initializes the LVGL library, allocates separate draw buffers from PSRAM,
+ * registers the display driver and input device driver to LVGL, creates a semaphore for
+ * LVGL synchronization, and starts the LVGL port task.
+ *
+ * @param[in] panel_handle Handle to the LCD panel associated with LVGL.
+ * @param[in] touch_handle Handle to the touchpad device associated with LVGL.
+ */
 void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch_handle) {
 
     static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
@@ -240,6 +289,7 @@ void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch
     disp_drv.draw_buf = &disp_buf;
     disp_drv.user_data = panel_handle;
     disp_drv.full_refresh = true;
+
     lv_disp_drv_register(&disp_drv);
 
     ESP_LOGI(TAG, "Register input device driver to LVGL");
@@ -256,6 +306,14 @@ void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch
 
 }
 
+/**
+ * @brief Touchpad Read Function
+ *
+ * This function reads touchpad input and updates the LVGL input device data accordingly.
+ *
+ * @param[in] indev_driver Pointer to the LVGL input device driver structure.
+ * @param[out] data Pointer to the LVGL input device data structure to be updated.
+ */
 static void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
 
@@ -278,9 +336,18 @@ static void touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
         data->point.x = touchpad_x;
         data->point.y = touchpad_y;
     }
-
 }
 
+/**
+ * @brief LVGL Flush Callback
+ *
+ * This callback function is called by LVGL to flush a portion of the display buffer to the physical display.
+ * It passes the draw buffer to the LCD panel driver, indicating the area that needs to be updated.
+ *
+ * @param[in] drv Pointer to the display driver structure.
+ * @param[in] area Pointer to the area that needs to be flushed.
+ * @param[in] color_map Pointer to the color map containing pixel data to be flushed.
+ */
 static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
@@ -290,11 +357,52 @@ static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t 
     int offsety1 = area->y1;
     int offsety2 = area->y2;
 
+    // LVGL has finished
+    xSemaphoreGive(sem_gui_ready);
+    // Now wait for the VSYNC event. 
+    xSemaphoreTake(sem_vsync_end, portMAX_DELAY);
+
     // pass the draw buffer to the driver
     esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, color_map);
     lv_disp_flush_ready(drv);
 }
 
+/**
+ * @brief Handles VSYNC events for an ESP32 LCD panel.
+ *
+ * This function waits until LVGL has finished its operations, indicated by the
+ * `sem_gui_ready` semaphore being taken. Once LVGL is ready, it signals that
+ * the VSYNC event has ended by giving the `sem_vsync_end` semaphore.
+ *
+ * @param[in] panel Handle to the LCD panel associated with the VSYNC event.
+ * @param[in] event_data Pointer to a structure containing data related to the VSYNC event.
+ * @param[in] user_data User data pointer passed when registering the VSYNC event handler.
+ * @return
+ *     - `true` if the task was woken up due to handling the VSYNC event, indicating that it's safe
+ *       to proceed with flushing the buffer.
+ *     - `false` otherwise.
+ */
+static bool on_vsync_event(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_data)
+{
+    BaseType_t high_task_awoken = pdFALSE;
+
+    // Wait until LVGL has finished 
+    if (xSemaphoreTakeFromISR(sem_gui_ready, &high_task_awoken) == pdTRUE) {
+        // Indicate that the VSYNC event has ended, and it's safe to proceed with flushing the buffer.
+        xSemaphoreGiveFromISR(sem_vsync_end, &high_task_awoken);
+    }
+
+    return high_task_awoken == pdTRUE;
+}
+
+/**
+ * @brief LVGL Port Task
+ *
+ * This task handles LVGL operations in the background. It periodically calls
+ * the LVGL timer handler to update the GUI.
+ *
+ * @param[in] arg Pointer to task arguments (not used).
+ */
 static void lvgl_port_task(void *arg)
 {
     ESP_LOGI(TAG, "Starting LVGL task");
