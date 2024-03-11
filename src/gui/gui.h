@@ -3,7 +3,7 @@
 
 #include "lvgl.h"
 #include "../ui/ui.h"
-#include "../display/matouch_esp32_s3.h"
+#include "../display/esp32_s3.h"
 
 
 void set_brightness(int32_t value);

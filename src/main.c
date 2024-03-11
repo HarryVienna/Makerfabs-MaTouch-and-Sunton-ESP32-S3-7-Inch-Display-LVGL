@@ -3,7 +3,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-#include "display/matouch_esp32_s3.h"
+#include "display/esp32_s3.h"
 #include "ui/ui.h"
 #include "task/counter_task.h"
 

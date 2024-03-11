@@ -1,5 +1,5 @@
-#ifndef MATOUCH_ESP32_S3_H
-#define MATOUCH_ESP32_S3_H
+#ifndef ESP32_S3_H
+#define ESP32_S3_H
 
 #include <stdio.h>
 
@@ -28,4 +28,4 @@ void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch
 }
 #endif
 
-#endif /* MATOUCH_ESP32_S3_H */
+#endif /* ESP32_S3_H */
