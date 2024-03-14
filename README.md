@@ -5,7 +5,7 @@ This is a small demo for the Sunton 7 inch display and the two MaTouch 7 inch di
 You will see 
 
 - How to use the ESP-IDF LCD driver
-- How to configure GT911 resultion
+- How to configure GT911 resolution
 - How to configure LVGL
 
 
