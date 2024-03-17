@@ -11,11 +11,11 @@
 #define I2C_SCL          GPIO_NUM_18
 #define I2C_SDA          GPIO_NUM_17
 #define I2C_RST          GPIO_NUM_38
-#define I2C_CLK_SPEED_HZ 400000
+#define I2C_CLK_SPEED_HZ 100000
 #define I2C_NUM          I2C_NUM_0
 
 // LCD
-#define LCD_PIXEL_CLOCK_HZ     (18 * 1000 * 1000)
+#define LCD_PIXEL_CLOCK_HZ     (16 * 1000 * 1000)
 
 #define PIN_NUM_HSYNC          GPIO_NUM_39
 #define PIN_NUM_VSYNC          GPIO_NUM_41

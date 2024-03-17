@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "sdkconfig.h"
 #include "esp_log.h"
 
@@ -13,7 +12,10 @@
 #include "lvgl.h"
 #include "esp32_s3.h"
 
-#include "sunton_7inch_800x480.h"
+// --- Choose your display ---
+//#include "sunton_7inch_800x480.h"
+//#include "matouch_7inch_800x480.h"
+#include "matouch_7inch_1024x600.h"
 
 
 
@@ -135,7 +137,10 @@ void init_touch(esp_lcd_touch_handle_t *touch_handle) {
     esp_lcd_panel_io_handle_t tp_io_handle = NULL;
 
     const esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_GT911_CONFIG();
+
+    ESP_LOGI(TAG, "Create LCD panel IO handle");
     esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)I2C_NUM, &tp_io_config, &tp_io_handle);
+    ESP_LOGI(TAG, "Create a new GT911 touch driver");
     esp_lcd_touch_new_i2c_gt911(tp_io_handle, &tp_cfg, touch_handle);
 }
 
@@ -188,17 +193,16 @@ void init_lcd(esp_lcd_panel_handle_t *panel_handle) {
             .pclk_hz = LCD_PIXEL_CLOCK_HZ,
             .h_res = LCD_H_RES,
             .v_res = LCD_V_RES,
-            // Matouch 7 inch values
             .hsync_back_porch = HSYNC_BACK_PORCH,
             .hsync_front_porch = HSYNC_FRONT_PORCH,
             .hsync_pulse_width = HSYNC_PULSE_WIDTH,
             .vsync_back_porch = VSYNC_BACK_PORCH,
             .vsync_front_porch = VSYNC_FRONT_PORCH,
             .vsync_pulse_width = VSYNC_PULSE_WIDTH,
-            .flags.pclk_active_neg = true,
         },
         .flags.fb_in_psram = true, // allocate frame buffer in PSRAM
     };
+    ESP_LOGI(TAG, "Create RGB LCD panel");
     esp_lcd_new_rgb_panel(&panel_config, panel_handle);
 
     ESP_LOGI(TAG, "Register event callbacks");
@@ -225,16 +229,21 @@ void init_lcd(esp_lcd_panel_handle_t *panel_handle) {
  */
 void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch_handle) {
 
+    ESP_LOGI(TAG, "Initialize LVGL library");
+
+    lvgl_mux = xSemaphoreCreateRecursiveMutex();
+
     static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
     static lv_disp_drv_t disp_drv;      // contains callback functions
-
-    ESP_LOGI(TAG, "Initialize LVGL library");
+    
     lv_init();
 
-    ESP_LOGI(TAG, "Allocate separate LVGL draw buffers from PSRAM");
-    void *buf1 = heap_caps_malloc(LCD_H_RES * 100 * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-    void *buf2 = heap_caps_malloc(LCD_H_RES * 100 * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
-    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, LCD_H_RES * 100);
+    ESP_LOGI(TAG, "Use PSRAM framebuffers");
+    void *buf1 = NULL;
+    void *buf2 = NULL;
+    esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2);
+    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, LCD_H_RES * LCD_V_RES);
+
 
     ESP_LOGI(TAG, "Register display driver to LVGL");
     lv_disp_drv_init(&disp_drv);
@@ -244,7 +253,6 @@ void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch
     disp_drv.draw_buf = &disp_buf;
     disp_drv.user_data = panel_handle;
     disp_drv.full_refresh = true;
-
     lv_disp_drv_register(&disp_drv);
 
     ESP_LOGI(TAG, "Register input device driver to LVGL");
@@ -255,10 +263,9 @@ void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch
     indev_drv.user_data = touch_handle;
     lv_indev_drv_register(&indev_drv);
 
-    ESP_LOGI(TAG, "Create LVGL semaphore");
-    lvgl_mux = xSemaphoreCreateRecursiveMutex();
-    xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
+    ESP_LOGI(TAG, "Start lv_timer_handler task");
 
+    xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
 }
 
 /**
