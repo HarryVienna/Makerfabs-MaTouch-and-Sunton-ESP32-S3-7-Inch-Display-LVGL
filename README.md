@@ -7,5 +7,7 @@ You will see
 - How to use the ESP-IDF LCD driver
 - How to configure GT911 resolution
 - How to configure LVGL
+- Change screen brightness with a slider
+- Change a GUI element from a task
 
 
