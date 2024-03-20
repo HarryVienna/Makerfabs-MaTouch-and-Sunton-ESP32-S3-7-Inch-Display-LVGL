@@ -11,4 +11,6 @@ You will see
 - Change screen brightness with a slider
 - Change a GUI element from a task
 
+You can find a detailed explanation [on my website](https://www.haraldkreuzer.net/en/news/Using-Sunton-MaTouch-ESP32-S3-7-inch-displays-with-LVGL-and-ESP-IDF) 
+
 
