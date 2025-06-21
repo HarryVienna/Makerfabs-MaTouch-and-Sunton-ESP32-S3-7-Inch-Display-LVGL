@@ -24,13 +24,13 @@ void app_main(void)
     ui_init();
     xSemaphoreGive(lvgl_mux);
 
-    // xTaskCreatePinnedToCore(
-    //   counter_task,   /* Task function. */
-    //   "Counter Task", /* String with name of task. */
-    //   4096,           /* Stack size in bytes. */
-    //   NULL,           /* Parameter passed as input of the task */
-    //   1,              /* Priority of the task. */
-    //   NULL,           /* Task handle. */
-    //   1);             /* Clock task on core 1*/
+    xTaskCreatePinnedToCore(
+      counter_task,   /* Task function. */
+      "Counter Task", /* String with name of task. */
+      4096,           /* Stack size in bytes. */
+      NULL,           /* Parameter passed as input of the task */
+      1,              /* Priority of the task. */
+      NULL,           /* Task handle. */
+      1);             /* Clock task on core 1*/
 
 }
