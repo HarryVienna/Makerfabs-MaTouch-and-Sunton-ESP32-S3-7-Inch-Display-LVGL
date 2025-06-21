@@ -23,9 +23,9 @@ void counter_task(void *pvParameter){
 
   for (;;) {
 
-    xSemaphoreTakeRecursive(lvgl_mux, portMAX_DELAY);
+    xSemaphoreTake(lvgl_mux, portMAX_DELAY);
     disp_counter(counter++);
-    xSemaphoreGiveRecursive(lvgl_mux);
+    xSemaphoreGive(lvgl_mux);
 
     vTaskDelay(pdMS_TO_TICKS(1000));
   }

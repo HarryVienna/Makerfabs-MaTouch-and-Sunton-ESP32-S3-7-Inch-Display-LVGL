@@ -17,21 +17,20 @@ void app_main(void)
 {
 
     init_display();
-    set_backlight_brightness(2);
 
     ESP_LOGI(TAG, "Start LVGL");
 
-    xSemaphoreTakeRecursive(lvgl_mux, portMAX_DELAY);
+    xSemaphoreTake(lvgl_mux, portMAX_DELAY);
     ui_init();
-    xSemaphoreGiveRecursive(lvgl_mux);
+    xSemaphoreGive(lvgl_mux);
 
-    xTaskCreatePinnedToCore(
-      counter_task,   /* Task function. */
-      "Counter Task", /* String with name of task. */
-      4096,           /* Stack size in bytes. */
-      NULL,           /* Parameter passed as input of the task */
-      1,              /* Priority of the task. */
-      NULL,           /* Task handle. */
-      1);             /* Clock task on core 1*/
+    // xTaskCreatePinnedToCore(
+    //   counter_task,   /* Task function. */
+    //   "Counter Task", /* String with name of task. */
+    //   4096,           /* Stack size in bytes. */
+    //   NULL,           /* Parameter passed as input of the task */
+    //   1,              /* Priority of the task. */
+    //   NULL,           /* Task handle. */
+    //   1);             /* Clock task on core 1*/
 
 }

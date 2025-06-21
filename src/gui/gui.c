@@ -24,7 +24,7 @@ void disp_counter(int32_t value) {
 }
 
 void event_screen_init(lv_event_t * e) {
-    set_brightness(2);
+    set_brightness(64);
 }
 
 void event_slider_set_backlight_brightness(lv_event_t * e) {

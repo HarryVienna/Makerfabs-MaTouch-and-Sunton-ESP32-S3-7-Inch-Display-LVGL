@@ -13,9 +13,9 @@
 #include "esp32_s3.h"
 
 // --- Choose your display ---
-//#include "sunton_7inch_800x480.h"
+#include "sunton_7inch_800x480.h"
 //#include "matouch_7inch_800x480.h"
-#include "matouch_7inch_1024x600.h"
+//#include "matouch_7inch_1024x600.h"
 
 
 // #define CONFIG_DOUBLE_FB 1
@@ -389,9 +389,9 @@ static void lvgl_port_task(void *arg)
 
     while (1) {
 
-        xSemaphoreTakeRecursive(lvgl_mux, portMAX_DELAY);
+        xSemaphoreTake(lvgl_mux, portMAX_DELAY);
         lv_timer_handler();
-        xSemaphoreGiveRecursive(lvgl_mux);
+        xSemaphoreGive(lvgl_mux);
 
         vTaskDelay(pdMS_TO_TICKS(LVGL_TASK_DELAY_MS));
     }

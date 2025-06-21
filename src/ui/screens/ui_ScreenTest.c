@@ -49,7 +49,7 @@ void ui_ScreenTest_screen_init(void)
 
     ui_SliderBrightness = lv_slider_create(ui_Panel2);
     lv_slider_set_range(ui_SliderBrightness, 2, 255);
-    lv_slider_set_value(ui_SliderBrightness, 2, LV_ANIM_OFF);
+    lv_slider_set_value(ui_SliderBrightness, 64, LV_ANIM_OFF);
     if(lv_slider_get_mode(ui_SliderBrightness) == LV_SLIDER_MODE_RANGE) lv_slider_set_left_value(ui_SliderBrightness, 0,
                                                                                                      LV_ANIM_OFF);
     lv_obj_set_width(ui_SliderBrightness, 500);
