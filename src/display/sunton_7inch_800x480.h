@@ -50,6 +50,6 @@
 #define LCD_V_RES         480
 
 // LVGL
-#define LVGL_TASK_DELAY_MS   50
+#define LVGL_TASK_DELAY_MS   25
 #define LVGL_TASK_STACK_SIZE (4 * 1024)
 #define LVGL_TASK_PRIORITY   2

@@ -255,9 +255,9 @@ void init_lvgl(esp_lcd_panel_handle_t panel_handle, esp_lcd_touch_handle_t touch
         lv_disp_draw_buf_init(&disp_buf, buf1, buf2, LCD_H_RES * LCD_V_RES);
     #else
         ESP_LOGI(TAG, "Allocate separate LVGL draw buffers from PSRAM");
-        buf1 = heap_caps_malloc(LCD_H_RES * 10 * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
+        buf1 = heap_caps_malloc(LCD_H_RES * (LCD_V_RES / 10) * sizeof(lv_color_t), MALLOC_CAP_SPIRAM);
         // initialize LVGL draw buffers
-        lv_disp_draw_buf_init(&disp_buf, buf1, buf2, LCD_H_RES * 10);
+        lv_disp_draw_buf_init(&disp_buf, buf1, NULL, LCD_H_RES * (LCD_V_RES / 10));  // 10 % is enough: https://docs.lvgl.io/8.0/porting/display.html
     #endif 
 
 
